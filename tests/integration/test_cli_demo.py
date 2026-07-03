@@ -57,3 +57,16 @@ def test_cli_demo_can_write_sqlite_database(tmp_path, capsys):
     output = capsys.readouterr().out
     assert "wrote_sqlite=" in output
     assert db_path.exists()
+
+
+def test_cli_demo_can_write_reports_and_sqlite_database(tmp_path, capsys):
+    output_dir = tmp_path / "reports"
+    db_path = tmp_path / "demo.sqlite"
+
+    main([str(output_dir), "--sqlite", str(db_path)])
+
+    output = capsys.readouterr().out
+    assert "wrote=" in output
+    assert "wrote_sqlite=" in output
+    assert (output_dir / "summary.json").exists()
+    assert db_path.exists()
