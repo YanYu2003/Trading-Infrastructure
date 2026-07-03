@@ -178,3 +178,28 @@ The CLI can now write SQLite history:
 ```powershell
 python -m mini_trading.app.cli_demo --sqlite reports/demo.sqlite
 ```
+
+## Phase 5B Run History Query
+
+Phase 5B adds a read-only CLI for inspecting persisted run history. It reuses `SQLiteRunStore` and prints deterministic CSV-style output for runs, orders, fills, account snapshots, and snapshot positions.
+
+The query direction is:
+
+```text
+SQLite database -> SQLiteRunStore -> run_history CLI -> audit output
+```
+
+This layer remains outside the trading core. It does not submit orders, run strategies, mutate account state, or replay fills into a live `Portfolio`. Its purpose is post-run inspection.
+
+Example commands:
+
+```powershell
+python -m mini_trading.app.run_history reports/demo.sqlite list-runs
+python -m mini_trading.app.run_history reports/demo.sqlite show-run demo
+python -m mini_trading.app.run_history reports/demo.sqlite orders demo
+python -m mini_trading.app.run_history reports/demo.sqlite fills demo
+python -m mini_trading.app.run_history reports/demo.sqlite snapshots demo
+python -m mini_trading.app.run_history reports/demo.sqlite positions demo --snapshot-index 2
+```
+
+This read-only query boundary prepares the project for a future FastAPI read API: HTTP endpoints can wrap the same query semantics instead of reaching into OMS or Portfolio internals.

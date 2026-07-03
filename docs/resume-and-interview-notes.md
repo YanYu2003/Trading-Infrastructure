@@ -219,6 +219,45 @@ Demo command with SQLite persistence:
 python -m mini_trading.app.cli_demo --sqlite reports/demo.sqlite
 ```
 
+### Completed: Phase 5B
+
+Phase 5B adds a read-only run-history query CLI:
+
+- `mini_trading.app.run_history`
+- `list-runs`
+- `show-run`
+- `orders`
+- `fills`
+- `snapshots`
+- `positions`
+- `positions --snapshot-index`
+
+Implemented behavior:
+
+- inspect persisted runs after the process exits
+- print deterministic CSV-style output
+- query final order states
+- query fills and notional values
+- query account snapshots
+- query per-snapshot positions
+- filter position rows by snapshot index
+- keep query behavior outside the trading core
+
+Latest Phase 5B verification:
+
+```text
+python -m pytest -q
+78 passed
+```
+
+Run-history query examples:
+
+```powershell
+python -m mini_trading.app.run_history reports/demo.sqlite list-runs
+python -m mini_trading.app.run_history reports/demo.sqlite show-run demo
+python -m mini_trading.app.run_history reports/demo.sqlite positions demo --snapshot-index 2
+```
+
 ## Architecture Story
 
 The intended MVP flow is:
@@ -548,6 +587,32 @@ Interview answer:
 
 > I added SQLite as a persistence boundary rather than as part of the trading core. The engine computes a TradingRunSummary in memory; SQLiteRunStore records that result transactionally. I store Decimal values as text to avoid floating-point drift, and I persist position snapshots so PnL can be explained symbol by symbol.
 
+### Run History Query CLI
+
+Code: `src/mini_trading/app/run_history.py`
+
+The run-history CLI is a read-only audit interface over SQLite persistence. It lets a user inspect saved runs without rerunning the strategy or mutating portfolio state.
+
+Supported commands:
+
+- `list-runs`
+- `show-run`
+- `orders`
+- `fills`
+- `snapshots`
+- `positions`
+- `positions --snapshot-index`
+
+Dependency direction:
+
+```text
+SQLite database -> SQLiteRunStore -> run_history CLI -> CSV-style output
+```
+
+Interview answer:
+
+> Phase 5B turns persistence into an audit workflow. After a demo run is saved, I can query the run summary, orders, fills, account snapshots, and per-snapshot positions from the command line. This remains read-only and outside the trading core, which makes it a natural precursor to a future FastAPI read API.
+
 ### Position, AccountSnapshot, And PnL
 
 `Position` represents holdings for one symbol:
@@ -768,6 +833,19 @@ Phase 5A adds tests for:
 - CLI SQLite database writing
 - existing JSON/CSV CLI output compatibility
 
+### Phase 5B Tests
+
+Phase 5B adds tests for:
+
+- listing saved runs
+- showing one run summary
+- querying persisted orders
+- querying persisted fills
+- querying account snapshots
+- querying per-snapshot positions
+- filtering positions by snapshot index
+- preserving deterministic CSV-style CLI output
+
 Testing interview answer:
 
 > I test business invariants: order quantity must be positive, limit orders require limit price, quote bid cannot exceed ask, fills compute notional correctly, and order states cannot move through impossible transitions. The tests protect trading-system consistency, not just code coverage.
@@ -867,6 +945,18 @@ SQLite is enough for local deterministic run history. It is standard-library fri
 #### Why store Decimal values as text?
 
 SQLite `REAL` uses floating-point representation, which is not ideal for financial audit values. The project uses `Decimal` in the domain model and stores those values as strings such as `"100120"` or `"99"` so persisted rows preserve exact values.
+
+#### What does the run-history query layer add?
+
+It makes persisted trading runs inspectable after the process exits. Instead of only saving rows, Phase 5B adds commands to query run summaries, orders, fills, account snapshots, and per-snapshot positions. This is an audit layer, not a trading layer.
+
+#### Why is the query layer read-only?
+
+Historical trading records should not be casually mutated by inspection tools. Keeping the query CLI read-only preserves the idea that orders, fills, and account snapshots are facts produced by the trading engine and persisted by the store.
+
+#### How does this prepare for FastAPI later?
+
+A future FastAPI service can wrap the same query semantics: list runs, show a run, list orders, list fills, and show snapshots. Because Phase 5B already keeps query behavior separate from OMS and Portfolio logic, the API layer can remain thin.
 
 #### Why not Kafka or Redis yet?
 
@@ -973,6 +1063,16 @@ Chinese:
 English:
 
 > Built a mock-first US equity Mini OMS in Python with SQLite run-history persistence, transactionally storing strategy signals, orders, fills, account snapshots, and per-snapshot positions while keeping OMS, risk, broker, and portfolio logic independent from the database.
+
+### Phase 5B Completed Version
+
+Chinese:
+
+> 基于 Python 构建 mock-first 美股 Mini OMS 模拟交易系统，新增 SQLite run-history 只读查询 CLI，支持查看历史 run、订单、成交、账户快照和逐快照持仓，为后续 FastAPI 只读接口和交易审计复盘打下基础。
+
+English:
+
+> Built a read-only SQLite run-history query CLI for a mock-first US equity Mini OMS, enabling inspection of historical runs, orders, fills, account snapshots, and per-snapshot positions while preserving a clean boundary from trading-core logic.
 
 ### Final Target Version
 
@@ -1119,6 +1219,32 @@ TradingEngine -> TradingRunSummary -> SQLiteRunStore -> SQLite
 ```
 
 The database stores results after the trading core finishes; it does not drive OMS state transitions, risk checks, broker execution, or PnL calculation.
+
+### Completed Phase 5B: Run History Query CLI
+
+Goal achieved: persisted trading runs can be inspected through a read-only CLI.
+
+Implemented module:
+
+- `src/mini_trading/app/run_history.py`
+
+Implemented commands:
+
+- `list-runs`
+- `show-run`
+- `orders`
+- `fills`
+- `snapshots`
+- `positions`
+- `positions --snapshot-index`
+
+Key boundary:
+
+```text
+SQLite database -> SQLiteRunStore -> run_history CLI -> audit output
+```
+
+This prepares the project for a future read-only FastAPI layer.
 
 ### Later Extensions
 

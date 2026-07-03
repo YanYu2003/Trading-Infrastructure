@@ -232,6 +232,20 @@ Persisted tables:
 - `account_snapshots`
 - `snapshot_positions`
 
+Query persisted run history:
+
+```powershell
+python -m mini_trading.app.run_history reports/demo.sqlite list-runs
+python -m mini_trading.app.run_history reports/demo.sqlite show-run demo
+python -m mini_trading.app.run_history reports/demo.sqlite orders demo
+python -m mini_trading.app.run_history reports/demo.sqlite fills demo
+python -m mini_trading.app.run_history reports/demo.sqlite snapshots demo
+python -m mini_trading.app.run_history reports/demo.sqlite positions demo
+python -m mini_trading.app.run_history reports/demo.sqlite positions demo --snapshot-index 2
+```
+
+The run-history CLI is read-only. It inspects persisted rows and does not drive strategy, risk, OMS, broker execution, or portfolio updates.
+
 ### Phase 6: Paper Trading Adapter
 
 - optionally add Alpaca Paper integration
