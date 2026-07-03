@@ -259,6 +259,32 @@ python -m mini_trading.app.run_history reports/demo.sqlite show-run demo
 python -m mini_trading.app.run_history reports/demo.sqlite positions demo --snapshot-index 2
 ```
 
+### 已完成：Phase 6
+
+Phase 6 增加了基于 SQLite run history 的 FastAPI 只读 API：
+
+- `GET /health`
+- `GET /runs`
+- `GET /runs/{run_id}`
+- `GET /runs/{run_id}/orders`
+- `GET /runs/{run_id}/fills`
+- `GET /runs/{run_id}/snapshots`
+- `GET /runs/{run_id}/positions`
+
+已实现行为：
+
+- API routes 复用 `SQLiteRunStore`。
+- API 返回历史订单、成交、账户快照和持仓。
+- 缺失 run ID 返回 HTTP 404。
+- API 层不修改交易状态。
+
+最近一次 Phase 6 验证结果：
+
+```text
+python -m pytest -q
+86 passed
+```
+
 ## 架构叙事
 
 MVP 目标链路：
@@ -618,6 +644,16 @@ SQLite database -> SQLiteRunStore -> run_history CLI -> CSV-style output
 
 > Phase 5B 把持久化变成了可审计工作流。demo run 保存之后，我可以通过命令行查询 run summary、orders、fills、account snapshots 和每个 snapshot 下的 positions。这个查询层是只读的，并且保持在交易核心之外，因此后续扩展 FastAPI read API 会更自然。
 
+### FastAPI Read API
+
+代码位置：`src/mini_trading/app/api.py`
+
+FastAPI 层把同样的 run-history 只读查询能力暴露成 HTTP endpoint。它是 `SQLiteRunStore` 之上的薄适配层。
+
+面试回答：
+
+> 我是在 run-history 查询语义稳定之后才加入 FastAPI。API 层不执行交易，也不修改订单，只暴露已持久化的历史 run。这样 HTTP concerns 和 OMS、风控、broker、portfolio 核心逻辑保持解耦。
+
 ### Position、AccountSnapshot 和 PnL
 
 `Position` 表示单个 symbol 的持仓：
@@ -851,6 +887,19 @@ Phase 5B 新增测试覆盖：
 - 按 snapshot index 过滤 positions。
 - 保持确定性的 CSV-style CLI 输出。
 
+### Phase 6 测试
+
+Phase 6 新增测试覆盖：
+
+- `/health`
+- `/runs`
+- run detail endpoint
+- orders endpoint
+- fills endpoint
+- snapshots endpoint
+- positions endpoint with `snapshot_index`
+- missing run ID 返回 404
+
 测试类面试回答：
 
 > 我的测试重点是保护交易系统不变量，例如订单数量必须为正、limit order 必须有 limit price、bid 不能高于 ask、fill notional 必须正确、filled/cancelled/rejected 是终态。状态机测试覆盖合法和非法流转，防止 OMS 出现不可能状态。
@@ -962,6 +1011,10 @@ SQLite `REAL` 是浮点表示，不适合作为金融审计金额。项目领域
 #### 这对后续 FastAPI 有什么帮助？
 
 后续 FastAPI 可以直接包装同样的查询语义：list runs、show run、orders、fills、snapshots。因为 Phase 5B 已经把查询行为和 OMS / Portfolio 解耦，API 层就可以保持很薄。
+
+#### 为什么 FastAPI 层是只读的？
+
+因为这个项目当前仍然是 mock-first trading infrastructure。API 应该暴露审计数据，而不是成为交易命令入口。只读 endpoint 更安全，也能让 HTTP 层和执行/风控逻辑保持分离。
 
 #### 为什么现在不用 Kafka / Redis / RabbitMQ？
 
@@ -1078,6 +1131,16 @@ Python 负责 orchestration 和业务流程，C++ 用于边界清晰的性能模
 英文：
 
 > Built a read-only SQLite run-history query CLI for a mock-first US equity Mini OMS, enabling inspection of historical runs, orders, fills, account snapshots, and per-snapshot positions while preserving a clean boundary from trading-core logic.
+
+### Phase 6 已完成版本
+
+中文：
+
+> 基于 FastAPI 为 mock-first 美股 Mini OMS 增加只读查询 API，暴露历史 run、订单、成交、账户快照和持仓查询，同时保持 HTTP 层与 OMS、风控、Broker Adapter 和 Portfolio 核心交易逻辑解耦。
+
+英文：
+
+> Added a read-only FastAPI layer for a mock-first US equity Mini OMS, exposing historical runs, orders, fills, account snapshots, and positions while keeping HTTP concerns decoupled from OMS, risk, broker, and portfolio logic.
 
 ### 最终目标版本
 
@@ -1250,6 +1313,20 @@ SQLite database -> SQLiteRunStore -> run_history CLI -> audit output
 ```
 
 这为后续 FastAPI read-only 查询层打好了基础。
+
+### 已完成 Phase 6：FastAPI Read API
+
+目标已完成：已持久化的 run history 可以通过只读 HTTP endpoints 查询。
+
+已实现模块：
+
+- `src/mini_trading/app/api.py`
+
+关键边界：
+
+```text
+HTTP request -> FastAPI route -> SQLiteRunStore -> SQLite rows
+```
 
 ### 后续扩展
 

@@ -246,13 +246,43 @@ python -m mini_trading.app.run_history reports/demo.sqlite positions demo --snap
 
 The run-history CLI is read-only. It inspects persisted rows and does not drive strategy, risk, OMS, broker execution, or portfolio updates.
 
-### Phase 6: Paper Trading Adapter
+### Phase 6: FastAPI Read-Only API
+
+- expose SQLite run history through read-only HTTP endpoints
+- keep HTTP outside the trading core
+- return 404 for missing run IDs
+
+Create a SQLite demo database:
+
+```powershell
+python -m mini_trading.app.cli_demo --sqlite reports/demo.sqlite
+```
+
+Run the API:
+
+```powershell
+$env:MINI_TRADING_DB='reports/demo.sqlite'
+uvicorn mini_trading.app.api:app --reload
+```
+
+Read-only endpoints:
+
+- `GET /health`
+- `GET /runs`
+- `GET /runs/{run_id}`
+- `GET /runs/{run_id}/orders`
+- `GET /runs/{run_id}/fills`
+- `GET /runs/{run_id}/snapshots`
+- `GET /runs/{run_id}/positions`
+- `GET /runs/{run_id}/positions?snapshot_index=2`
+
+### Phase 7: Paper Trading Adapter
 
 - optionally add Alpaca Paper integration
 - keep MockBroker as the fully runnable default
 - keep live trading disabled
 
-### Phase 7: Engineering And Resume Polish
+### Phase 8: Engineering And Resume Polish
 
 - add run examples, test coverage notes, and performance metrics
 - write Chinese and English resume bullets

@@ -258,6 +258,32 @@ python -m mini_trading.app.run_history reports/demo.sqlite show-run demo
 python -m mini_trading.app.run_history reports/demo.sqlite positions demo --snapshot-index 2
 ```
 
+### Completed: Phase 6
+
+Phase 6 adds a FastAPI read-only API over SQLite run history:
+
+- `GET /health`
+- `GET /runs`
+- `GET /runs/{run_id}`
+- `GET /runs/{run_id}/orders`
+- `GET /runs/{run_id}/fills`
+- `GET /runs/{run_id}/snapshots`
+- `GET /runs/{run_id}/positions`
+
+Implemented behavior:
+
+- API routes reuse `SQLiteRunStore`
+- API returns historical orders, fills, snapshots, and positions
+- missing run IDs return HTTP 404
+- API layer does not mutate trading state
+
+Latest Phase 6 verification:
+
+```text
+python -m pytest -q
+86 passed
+```
+
 ## Architecture Story
 
 The intended MVP flow is:
@@ -613,6 +639,16 @@ Interview answer:
 
 > Phase 5B turns persistence into an audit workflow. After a demo run is saved, I can query the run summary, orders, fills, account snapshots, and per-snapshot positions from the command line. This remains read-only and outside the trading core, which makes it a natural precursor to a future FastAPI read API.
 
+### FastAPI Read API
+
+Code: `src/mini_trading/app/api.py`
+
+The FastAPI layer exposes the same read-only run-history concepts over HTTP. It is a thin adapter over `SQLiteRunStore`.
+
+Interview answer:
+
+> I added FastAPI only after the run-history query semantics were stable. The API layer does not execute trades or mutate orders; it only exposes persisted run history. This keeps HTTP concerns separate from OMS, risk, broker, and portfolio logic.
+
 ### Position, AccountSnapshot, And PnL
 
 `Position` represents holdings for one symbol:
@@ -846,6 +882,19 @@ Phase 5B adds tests for:
 - filtering positions by snapshot index
 - preserving deterministic CSV-style CLI output
 
+### Phase 6 Tests
+
+Phase 6 adds tests for:
+
+- `/health`
+- `/runs`
+- run detail endpoint
+- orders endpoint
+- fills endpoint
+- snapshots endpoint
+- positions endpoint with `snapshot_index`
+- 404 response for missing run IDs
+
 Testing interview answer:
 
 > I test business invariants: order quantity must be positive, limit orders require limit price, quote bid cannot exceed ask, fills compute notional correctly, and order states cannot move through impossible transitions. The tests protect trading-system consistency, not just code coverage.
@@ -957,6 +1006,10 @@ Historical trading records should not be casually mutated by inspection tools. K
 #### How does this prepare for FastAPI later?
 
 A future FastAPI service can wrap the same query semantics: list runs, show a run, list orders, list fills, and show snapshots. Because Phase 5B already keeps query behavior separate from OMS and Portfolio logic, the API layer can remain thin.
+
+#### Why is the FastAPI layer read-only?
+
+Because this project is still mock-first infrastructure. The API should expose audit data, not become a trading command surface. Read-only endpoints are safer and keep HTTP separate from execution and risk logic.
 
 #### Why not Kafka or Redis yet?
 
@@ -1073,6 +1126,16 @@ Chinese:
 English:
 
 > Built a read-only SQLite run-history query CLI for a mock-first US equity Mini OMS, enabling inspection of historical runs, orders, fills, account snapshots, and per-snapshot positions while preserving a clean boundary from trading-core logic.
+
+### Phase 6 Completed Version
+
+Chinese:
+
+> 基于 FastAPI 为 mock-first 美股 Mini OMS 增加只读查询 API，暴露历史 run、订单、成交、账户快照和持仓查询，同时保持 HTTP 层与 OMS、风控、Broker Adapter 和 Portfolio 核心交易逻辑解耦。
+
+English:
+
+> Added a read-only FastAPI layer for a mock-first US equity Mini OMS, exposing historical runs, orders, fills, account snapshots, and positions while keeping HTTP concerns decoupled from OMS, risk, broker, and portfolio logic.
 
 ### Final Target Version
 
@@ -1245,6 +1308,20 @@ SQLite database -> SQLiteRunStore -> run_history CLI -> audit output
 ```
 
 This prepares the project for a future read-only FastAPI layer.
+
+### Completed Phase 6: FastAPI Read API
+
+Goal achieved: persisted run history can be queried through read-only HTTP endpoints.
+
+Implemented module:
+
+- `src/mini_trading/app/api.py`
+
+Key boundary:
+
+```text
+HTTP request -> FastAPI route -> SQLiteRunStore -> SQLite rows
+```
 
 ### Later Extensions
 

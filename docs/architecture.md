@@ -203,3 +203,23 @@ python -m mini_trading.app.run_history reports/demo.sqlite positions demo --snap
 ```
 
 This read-only query boundary prepares the project for a future FastAPI read API: HTTP endpoints can wrap the same query semantics instead of reaching into OMS or Portfolio internals.
+
+## Phase 6 FastAPI Read API
+
+Phase 6 exposes the SQLite run-history read model through FastAPI. The API layer is intentionally thin:
+
+```text
+HTTP request -> FastAPI route -> SQLiteRunStore -> SQLite rows
+```
+
+It provides:
+
+- `GET /health`
+- `GET /runs`
+- `GET /runs/{run_id}`
+- `GET /runs/{run_id}/orders`
+- `GET /runs/{run_id}/fills`
+- `GET /runs/{run_id}/snapshots`
+- `GET /runs/{run_id}/positions`
+
+The API is read-only. It does not call `TradingEngine`, `OrderManager`, `RiskEngine`, `MockBroker`, or `Portfolio` mutation methods. Missing run IDs return HTTP 404.
