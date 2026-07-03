@@ -289,11 +289,14 @@ Current async modules:
 - `mini_trading.marketdata.async_mock.AsyncMockMarketDataProvider`
 - `mini_trading.core.async_engine.AsyncTradingEngine`
 
-### Phase 8: Paper Trading Adapter
+### Phase 8: Paper Trading Adapter Boundary
 
-- optionally add Alpaca Paper integration
+- add safe paper broker adapter boundary
+- keep network submission unimplemented
 - keep MockBroker as the fully runnable default
 - keep live trading disabled
+
+Phase 8 intentionally does not connect to a real broker. `PaperBrokerAdapter` is disabled by default, requires paper credentials if enabled, and refuses live trading configuration.
 
 ### Phase 9: Engineering And Resume Polish
 

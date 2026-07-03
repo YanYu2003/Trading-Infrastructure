@@ -235,3 +235,16 @@ AsyncMarketDataProvider -> AsyncTradingEngine -> Strategy -> OrderManager
 `AsyncTradingEngine` consumes an async event stream while reusing the existing strategy, OMS, risk, broker, and portfolio modules. This proves the architecture can move toward real-time WebSocket-style ingestion without rewriting the trading core.
 
 Real WebSocket connectivity, reconnect/backoff, and external credentials remain out of scope for this phase.
+
+## Phase 8 Paper Adapter Boundary
+
+Phase 8 adds `PaperBrokerAdapter` as a safety boundary. It follows the broker adapter shape but does not submit orders to an external system.
+
+Safety rules:
+
+- disabled by default
+- requires credentials if explicitly enabled
+- refuses live trading configuration
+- performs no network calls in the MVP
+
+This keeps future paper trading extension points visible without weakening the mock-first safety posture.

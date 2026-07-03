@@ -307,6 +307,29 @@ python -m pytest -q
 88 passed
 ```
 
+### Completed: Phase 8
+
+Phase 8 adds a paper broker adapter safety boundary:
+
+- `PaperBrokerSettings`
+- `PaperBrokerAdapter`
+- `PaperTradingDisabled`
+- `PaperTradingNotImplemented`
+
+Implemented behavior:
+
+- disabled by default
+- credentials required when enabled
+- live trading config rejected
+- no external network call implemented
+
+Latest Phase 8 verification:
+
+```text
+python -m pytest -q
+92 passed
+```
+
 ## Architecture Story
 
 The intended MVP flow is:
@@ -680,6 +703,14 @@ Interview answer:
 
 > I added an async market-data boundary before connecting to real WebSockets. The async engine consumes events with `async for`, but still reuses the existing strategy, OMS, broker, and portfolio modules. This keeps real-time ingestion concerns separate from trading-domain logic.
 
+### Paper Broker Boundary
+
+Code: `src/mini_trading/brokers/paper.py`
+
+Interview answer:
+
+> I added a paper broker adapter boundary without enabling external order submission. It is disabled by default, requires credentials if enabled, and rejects live trading configuration. This shows where paper trading would plug in while preserving the project's mock-first safety stance.
+
 ### Position, AccountSnapshot, And PnL
 
 `Position` represents holdings for one symbol:
@@ -934,6 +965,15 @@ Phase 7 adds tests for:
 - async provider re-iterability
 - parity with the synchronous demo account result
 
+### Phase 8 Tests
+
+Phase 8 adds tests for:
+
+- paper adapter disabled by default
+- credentials required when enabled
+- enabled adapter still refuses network submission
+- environment settings keep live trading disabled
+
 Testing interview answer:
 
 > I test business invariants: order quantity must be positive, limit orders require limit price, quote bid cannot exceed ask, fills compute notional correctly, and order states cannot move through impossible transitions. The tests protect trading-system consistency, not just code coverage.
@@ -1185,6 +1225,16 @@ Chinese:
 English:
 
 > Added an async market-data ingestion prototype for a mock-first US equity Mini OMS, using async iterators to validate real-time event boundaries while reusing the existing strategy, OMS, broker, and portfolio core.
+
+### Phase 8 Completed Version
+
+Chinese:
+
+> 为 mock-first 美股 Mini OMS 增加 Paper Broker Adapter 安全边界，默认禁用外部提交、启用时要求 paper credentials，并显式拒绝 live trading 配置，保持项目安全姿态。
+
+English:
+
+> Added a safe Paper Broker Adapter boundary for a mock-first US equity Mini OMS, keeping external submission disabled by default, requiring paper credentials when enabled, and explicitly rejecting live trading configuration.
 
 ### Final Target Version
 

@@ -308,6 +308,29 @@ python -m pytest -q
 88 passed
 ```
 
+### 已完成：Phase 8
+
+Phase 8 增加了 Paper Broker Adapter 安全边界：
+
+- `PaperBrokerSettings`
+- `PaperBrokerAdapter`
+- `PaperTradingDisabled`
+- `PaperTradingNotImplemented`
+
+已实现行为：
+
+- 默认禁用。
+- 启用时必须提供 credentials。
+- 拒绝 live trading 配置。
+- MVP 不实现任何外部网络下单。
+
+最近一次 Phase 8 验证结果：
+
+```text
+python -m pytest -q
+92 passed
+```
+
 ## 架构叙事
 
 MVP 目标链路：
@@ -685,6 +708,14 @@ FastAPI 层把同样的 run-history 只读查询能力暴露成 HTTP endpoint。
 
 > 我先增加异步行情边界，而不是直接接真实 WebSocket。AsyncTradingEngine 使用 `async for` 消费行情事件，但仍然复用已有 strategy、OMS、broker 和 portfolio。这样实时 I/O 和交易领域逻辑保持分离。
 
+### Paper Broker Boundary
+
+代码位置：`src/mini_trading/brokers/paper.py`
+
+面试回答：
+
+> 我增加了 paper broker adapter 边界，但没有启用外部订单提交。它默认禁用，启用时要求 credentials，并拒绝 live trading 配置。这样既展示了 paper trading 的扩展点，又保持 mock-first 的安全姿态。
+
 ### Position、AccountSnapshot 和 PnL
 
 `Position` 表示单个 symbol 的持仓：
@@ -939,6 +970,15 @@ Phase 7 新增测试覆盖：
 - async provider 可重复迭代。
 - 与同步 demo 的账户结果保持一致。
 
+### Phase 8 测试
+
+Phase 8 新增测试覆盖：
+
+- paper adapter 默认禁用。
+- 启用时必须提供 credentials。
+- adapter 即使启用也拒绝网络提交。
+- 环境配置保持 live trading disabled。
+
 测试类面试回答：
 
 > 我的测试重点是保护交易系统不变量，例如订单数量必须为正、limit order 必须有 limit price、bid 不能高于 ask、fill notional 必须正确、filled/cancelled/rejected 是终态。状态机测试覆盖合法和非法流转，防止 OMS 出现不可能状态。
@@ -1190,6 +1230,16 @@ Python 负责 orchestration 和业务流程，C++ 用于边界清晰的性能模
 英文：
 
 > Added an async market-data ingestion prototype for a mock-first US equity Mini OMS, using async iterators to validate real-time event boundaries while reusing the existing strategy, OMS, broker, and portfolio core.
+
+### Phase 8 已完成版本
+
+中文：
+
+> 为 mock-first 美股 Mini OMS 增加 Paper Broker Adapter 安全边界，默认禁用外部提交、启用时要求 paper credentials，并显式拒绝 live trading 配置，保持项目安全姿态。
+
+英文：
+
+> Added a safe Paper Broker Adapter boundary for a mock-first US equity Mini OMS, keeping external submission disabled by default, requiring paper credentials when enabled, and explicitly rejecting live trading configuration.
 
 ### 最终目标版本
 
