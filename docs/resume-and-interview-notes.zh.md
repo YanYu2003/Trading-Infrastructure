@@ -211,7 +211,7 @@ Phase 5A 增加了 SQLite run-history 持久化：
 
 ```text
 python -m pytest -q
-70 passed
+71 passed
 ```
 
 生成 SQLite run history 的 demo 命令：

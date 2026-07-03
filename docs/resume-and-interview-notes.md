@@ -210,7 +210,7 @@ Latest Phase 5A verification:
 
 ```text
 python -m pytest -q
-70 passed
+71 passed
 ```
 
 Demo command with SQLite persistence:
