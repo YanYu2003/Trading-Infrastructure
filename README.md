@@ -276,13 +276,26 @@ Read-only endpoints:
 - `GET /runs/{run_id}/positions`
 - `GET /runs/{run_id}/positions?snapshot_index=2`
 
-### Phase 7: Paper Trading Adapter
+### Phase 7: Async Market Data Prototype
+
+- add async market data provider boundary
+- add deterministic async mock provider
+- add async trading engine smoke flow
+- keep real WebSocket providers out of scope until the boundary is stable
+
+Current async modules:
+
+- `mini_trading.marketdata.async_base.AsyncMarketDataProvider`
+- `mini_trading.marketdata.async_mock.AsyncMockMarketDataProvider`
+- `mini_trading.core.async_engine.AsyncTradingEngine`
+
+### Phase 8: Paper Trading Adapter
 
 - optionally add Alpaca Paper integration
 - keep MockBroker as the fully runnable default
 - keep live trading disabled
 
-### Phase 8: Engineering And Resume Polish
+### Phase 9: Engineering And Resume Polish
 
 - add run examples, test coverage notes, and performance metrics
 - write Chinese and English resume bullets

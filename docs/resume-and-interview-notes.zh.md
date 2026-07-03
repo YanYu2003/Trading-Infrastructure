@@ -285,6 +285,29 @@ python -m pytest -q
 86 passed
 ```
 
+### 已完成：Phase 7
+
+Phase 7 增加了异步行情原型：
+
+- `AsyncMarketDataProvider`
+- `AsyncMockMarketDataProvider`
+- `AsyncTradingEngine`
+- pytest-asyncio 测试覆盖
+
+已实现行为：
+
+- 通过 async iteration 消费确定性行情事件。
+- 结果与同步 demo summary 保持一致。
+- 复用现有 strategy、OMS、broker 和 portfolio。
+- 本阶段不接入真实 WebSocket 或 API 凭证。
+
+最近一次 Phase 7 验证结果：
+
+```text
+python -m pytest -q
+88 passed
+```
+
 ## 架构叙事
 
 MVP 目标链路：
@@ -654,6 +677,14 @@ FastAPI 层把同样的 run-history 只读查询能力暴露成 HTTP endpoint。
 
 > 我是在 run-history 查询语义稳定之后才加入 FastAPI。API 层不执行交易，也不修改订单，只暴露已持久化的历史 run。这样 HTTP concerns 和 OMS、风控、broker、portfolio 核心逻辑保持解耦。
 
+### Async Market Data Prototype
+
+代码位置：`src/mini_trading/marketdata/async_mock.py` 和 `src/mini_trading/core/async_engine.py`
+
+面试回答：
+
+> 我先增加异步行情边界，而不是直接接真实 WebSocket。AsyncTradingEngine 使用 `async for` 消费行情事件，但仍然复用已有 strategy、OMS、broker 和 portfolio。这样实时 I/O 和交易领域逻辑保持分离。
+
 ### Position、AccountSnapshot 和 PnL
 
 `Position` 表示单个 symbol 的持仓：
@@ -900,6 +931,14 @@ Phase 6 新增测试覆盖：
 - positions endpoint with `snapshot_index`
 - missing run ID 返回 404
 
+### Phase 7 测试
+
+Phase 7 新增测试覆盖：
+
+- async engine 确定性 buy/sell flow。
+- async provider 可重复迭代。
+- 与同步 demo 的账户结果保持一致。
+
 测试类面试回答：
 
 > 我的测试重点是保护交易系统不变量，例如订单数量必须为正、limit order 必须有 limit price、bid 不能高于 ask、fill notional 必须正确、filled/cancelled/rejected 是终态。状态机测试覆盖合法和非法流转，防止 OMS 出现不可能状态。
@@ -1141,6 +1180,16 @@ Python 负责 orchestration 和业务流程，C++ 用于边界清晰的性能模
 英文：
 
 > Added a read-only FastAPI layer for a mock-first US equity Mini OMS, exposing historical runs, orders, fills, account snapshots, and positions while keeping HTTP concerns decoupled from OMS, risk, broker, and portfolio logic.
+
+### Phase 7 已完成版本
+
+中文：
+
+> 为 mock-first 美股 Mini OMS 新增异步行情接入原型，基于 async iterator 实现确定性 AsyncMarketDataProvider 和 AsyncTradingEngine，在不接入真实 WebSocket 的前提下验证实时行情边界与交易核心解耦。
+
+英文：
+
+> Added an async market-data ingestion prototype for a mock-first US equity Mini OMS, using async iterators to validate real-time event boundaries while reusing the existing strategy, OMS, broker, and portfolio core.
 
 ### 最终目标版本
 

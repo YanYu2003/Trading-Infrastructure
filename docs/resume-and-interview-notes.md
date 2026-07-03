@@ -284,6 +284,29 @@ python -m pytest -q
 86 passed
 ```
 
+### Completed: Phase 7
+
+Phase 7 adds an async market-data prototype:
+
+- `AsyncMarketDataProvider`
+- `AsyncMockMarketDataProvider`
+- `AsyncTradingEngine`
+- pytest-asyncio coverage
+
+Implemented behavior:
+
+- consume deterministic market data through async iteration
+- match the synchronous demo summary
+- keep strategy, OMS, broker, and portfolio reusable
+- avoid real WebSocket/API credentials in this phase
+
+Latest Phase 7 verification:
+
+```text
+python -m pytest -q
+88 passed
+```
+
 ## Architecture Story
 
 The intended MVP flow is:
@@ -649,6 +672,14 @@ Interview answer:
 
 > I added FastAPI only after the run-history query semantics were stable. The API layer does not execute trades or mutate orders; it only exposes persisted run history. This keeps HTTP concerns separate from OMS, risk, broker, and portfolio logic.
 
+### Async Market Data Prototype
+
+Code: `src/mini_trading/marketdata/async_mock.py` and `src/mini_trading/core/async_engine.py`
+
+Interview answer:
+
+> I added an async market-data boundary before connecting to real WebSockets. The async engine consumes events with `async for`, but still reuses the existing strategy, OMS, broker, and portfolio modules. This keeps real-time ingestion concerns separate from trading-domain logic.
+
 ### Position, AccountSnapshot, And PnL
 
 `Position` represents holdings for one symbol:
@@ -895,6 +926,14 @@ Phase 6 adds tests for:
 - positions endpoint with `snapshot_index`
 - 404 response for missing run IDs
 
+### Phase 7 Tests
+
+Phase 7 adds tests for:
+
+- async engine deterministic buy/sell flow
+- async provider re-iterability
+- parity with the synchronous demo account result
+
 Testing interview answer:
 
 > I test business invariants: order quantity must be positive, limit orders require limit price, quote bid cannot exceed ask, fills compute notional correctly, and order states cannot move through impossible transitions. The tests protect trading-system consistency, not just code coverage.
@@ -1136,6 +1175,16 @@ Chinese:
 English:
 
 > Added a read-only FastAPI layer for a mock-first US equity Mini OMS, exposing historical runs, orders, fills, account snapshots, and positions while keeping HTTP concerns decoupled from OMS, risk, broker, and portfolio logic.
+
+### Phase 7 Completed Version
+
+Chinese:
+
+> 为 mock-first 美股 Mini OMS 新增异步行情接入原型，基于 async iterator 实现确定性 AsyncMarketDataProvider 和 AsyncTradingEngine，在不接入真实 WebSocket 的前提下验证实时行情边界与交易核心解耦。
+
+English:
+
+> Added an async market-data ingestion prototype for a mock-first US equity Mini OMS, using async iterators to validate real-time event boundaries while reusing the existing strategy, OMS, broker, and portfolio core.
 
 ### Final Target Version
 

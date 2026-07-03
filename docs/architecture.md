@@ -223,3 +223,15 @@ It provides:
 - `GET /runs/{run_id}/positions`
 
 The API is read-only. It does not call `TradingEngine`, `OrderManager`, `RiskEngine`, `MockBroker`, or `Portfolio` mutation methods. Missing run IDs return HTTP 404.
+
+## Phase 7 Async Market Data Prototype
+
+Phase 7 adds an async market-data boundary and deterministic async provider:
+
+```text
+AsyncMarketDataProvider -> AsyncTradingEngine -> Strategy -> OrderManager
+```
+
+`AsyncTradingEngine` consumes an async event stream while reusing the existing strategy, OMS, risk, broker, and portfolio modules. This proves the architecture can move toward real-time WebSocket-style ingestion without rewriting the trading core.
+
+Real WebSocket connectivity, reconnect/backoff, and external credentials remain out of scope for this phase.
