@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -12,6 +13,7 @@ from mini_trading.core.oms import OrderManager
 from mini_trading.core.portfolio import Portfolio
 from mini_trading.core.risk import RiskEngine, RiskLimits
 from mini_trading.marketdata.mock import MockMarketDataProvider
+from mini_trading.persistence.sqlite import SQLiteRunStore
 from mini_trading.reports.replay import ReplayReport
 from mini_trading.strategies.threshold import PriceThresholdStrategy
 
@@ -76,8 +78,28 @@ def write_demo_reports(output_dir: str | Path) -> list[Path]:
     return written
 
 
+def write_demo_sqlite(db_path: str | Path, run_id: str = "demo") -> Path:
+    summary = run_demo()
+    path = Path(db_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    SQLiteRunStore(path).save_run(run_id=run_id, summary=summary)
+    return path
+
+
 def main(argv: list[str] | None = None) -> None:
-    args = sys.argv[1:] if argv is None else argv
+    parser = argparse.ArgumentParser(description="Run the deterministic trading demo.")
+    parser.add_argument(
+        "output_dir",
+        nargs="?",
+        help="Optional directory for JSON and CSV replay reports.",
+    )
+    parser.add_argument(
+        "--sqlite",
+        dest="sqlite_path",
+        help="Optional SQLite database path for persisted run history.",
+    )
+    args = parser.parse_args(sys.argv[1:] if argv is None else argv)
+
     summary = run_demo()
     print(f"events_processed={summary.events_processed}")
     print(f"signals={len(summary.signals)}")
@@ -87,10 +109,13 @@ def main(argv: list[str] | None = None) -> None:
     print(f"equity={summary.account.equity}")
     print(f"realized_pnl={summary.account.pnl.realized}")
     print(f"unrealized_pnl={summary.account.pnl.unrealized}")
-    if args:
-        written = write_demo_reports(args[0])
+    if args.output_dir:
+        written = write_demo_reports(args.output_dir)
         for path in written:
             print(f"wrote={path}")
+    if args.sqlite_path:
+        written_sqlite = write_demo_sqlite(args.sqlite_path)
+        print(f"wrote_sqlite={written_sqlite}")
 
 
 if __name__ == "__main__":
