@@ -61,6 +61,17 @@ Trading-Infrastructure/
 
 Use a project-local virtual environment.
 
+Recommended `uv` setup:
+
+```powershell
+uv python install 3.12
+uv venv --python 3.12 .venv
+uv pip install --python .venv\Scripts\python.exe -e ".[dev]"
+.\.venv\Scripts\python.exe -m pytest -q
+```
+
+Standard `venv` setup:
+
 ```powershell
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
@@ -191,13 +202,19 @@ python -m mini_trading.app.cli_demo reports/demo
 
 This phase is intentionally lightweight. It is a replay/reporting layer for a deterministic MVP, not a full performance analytics platform.
 
-### Phase 5: Paper Trading Adapter
+### Phase 5: Persistence And Run History
+
+- add SQLite persistence for orders, fills, account snapshots, and run summaries
+- keep OMS, risk, broker, and portfolio logic independent from the database
+- support deterministic replay auditing from persisted records
+
+### Phase 6: Paper Trading Adapter
 
 - optionally add Alpaca Paper integration
 - keep MockBroker as the fully runnable default
 - keep live trading disabled
 
-### Phase 6: Engineering And Resume Polish
+### Phase 7: Engineering And Resume Polish
 
 - add run examples, test coverage notes, and performance metrics
 - write Chinese and English resume bullets
