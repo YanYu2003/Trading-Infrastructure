@@ -183,6 +183,42 @@ $env:PYTHONPATH='src'
 python -m mini_trading.app.cli_demo reports/demo
 ```
 
+### Completed: Phase 5A
+
+Phase 5A adds SQLite run-history persistence:
+
+- `SQLiteRunStore`
+- `runs` table
+- `signals` table
+- `orders` table
+- `fills` table
+- `account_snapshots` table
+- `snapshot_positions` table
+- CLI `--sqlite` output option
+
+Implemented behavior:
+
+- save a completed `TradingRunSummary` into one SQLite transaction
+- persist strategy signals, final order records, fills, account snapshots, and per-snapshot positions
+- store `Decimal` values as exact text instead of SQLite `REAL`
+- store datetimes as ISO-8601 text
+- reject blank run IDs
+- reject duplicate run IDs through SQLite primary keys
+- preserve the core trading boundary: OMS, risk, broker, strategy, and portfolio do not import SQLite
+
+Latest Phase 5A verification:
+
+```text
+python -m pytest -q
+70 passed
+```
+
+Demo command with SQLite persistence:
+
+```powershell
+python -m mini_trading.app.cli_demo --sqlite reports/demo.sqlite
+```
+
 ## Architecture Story
 
 The intended MVP flow is:
@@ -473,6 +509,45 @@ Interview answer:
 
 > Phase 4 makes the system replayable. Instead of only printing final PnL, the engine records account snapshots after each market data event, and the reporting layer exports orders, fills, and account state changes. This helps explain how the account moved from event to event.
 
+### SQLiteRunStore And Persistence Boundary
+
+Code: `src/mini_trading/persistence/sqlite.py`
+
+`SQLiteRunStore` stores completed trading runs. It receives a `TradingRunSummary` after `TradingEngine.run()` finishes and writes the run to SQLite.
+
+It persists:
+
+- run-level counts and final account values
+- strategy signals
+- final order states
+- fills
+- account snapshots
+- per-snapshot positions
+
+Important design point:
+
+```text
+TradingEngine -> TradingRunSummary -> SQLiteRunStore -> SQLite
+```
+
+The dependency does not point backward. `core.engine`, `core.oms`, `core.risk`, `brokers`, `strategies`, and `portfolio` do not import SQLite. This keeps trading logic testable and prevents persistence details from leaking into order lifecycle logic.
+
+Financial values are stored as text:
+
+```text
+Decimal("100120") -> "100120"
+```
+
+Reason:
+
+- SQLite has no native fixed-precision decimal type.
+- SQLite `REAL` is floating point.
+- Financial audit rows should preserve exact values.
+
+Interview answer:
+
+> I added SQLite as a persistence boundary rather than as part of the trading core. The engine computes a TradingRunSummary in memory; SQLiteRunStore records that result transactionally. I store Decimal values as text to avoid floating-point drift, and I persist position snapshots so PnL can be explained symbol by symbol.
+
 ### Position, AccountSnapshot, And PnL
 
 `Position` represents holdings for one symbol:
@@ -676,6 +751,23 @@ Phase 4 adds tests for:
 - account snapshots CSV
 - CLI report artifact writing
 
+### Phase 5A Tests
+
+Phase 5A adds tests for:
+
+- SQLite schema initialization
+- persisted run counts and final account values
+- persisted strategy signals
+- persisted final order records
+- persisted fills and notional values
+- persisted account snapshots
+- persisted per-snapshot positions
+- exact `Decimal` string storage
+- blank run ID rejection
+- duplicate run ID rejection
+- CLI SQLite database writing
+- existing JSON/CSV CLI output compatibility
+
 Testing interview answer:
 
 > I test business invariants: order quantity must be positive, limit orders require limit price, quote bid cannot exceed ask, fills compute notional correctly, and order states cannot move through impossible transitions. The tests protect trading-system consistency, not just code coverage.
@@ -764,9 +856,17 @@ They have different risk levels. Mock is local, paper uses external simulated tr
 
 FastAPI is useful as an interface layer after the core is stable. The MVP first focuses on OMS logic, risk, broker simulation, and account updates. API endpoints should be thin adapters, not places where trading logic lives.
 
-#### Why not database yet?
+#### Why introduce SQLite in Phase 5A instead of earlier?
 
-The domain model should stabilize before designing persistence schema. SQLite or PostgreSQL can later persist orders, fills, positions, account snapshots, and risk rejections.
+The domain model needed to stabilize first. If persistence came before `Order`, `Fill`, `AccountSnapshot`, and `TradingRunSummary` were clear, the schema would likely mirror unstable implementation details. Phase 5A introduces SQLite after the in-memory trading chain and replay reports are stable, so the database records well-defined trading facts rather than driving the business logic.
+
+#### Why SQLite instead of PostgreSQL or an ORM?
+
+SQLite is enough for local deterministic run history. It is standard-library friendly, requires no service setup, and makes the project easy to run in interviews or demos. PostgreSQL or SQLAlchemy can be added later if the project needs multi-user access, migrations, richer querying, or production deployment.
+
+#### Why store Decimal values as text?
+
+SQLite `REAL` uses floating-point representation, which is not ideal for financial audit values. The project uses `Decimal` in the domain model and stores those values as strings such as `"100120"` or `"99"` so persisted rows preserve exact values.
 
 #### Why not Kafka or Redis yet?
 
@@ -864,6 +964,16 @@ English:
 
 > Built a mock-first US equity Mini OMS in Python with deterministic replay, threshold strategy signals, pre-trade risk checks, mock broker execution, portfolio/cash/PnL updates, and JSON/CSV reports for orders, fills, account snapshots, and final run summary.
 
+### Phase 5A Completed Version
+
+Chinese:
+
+> 基于 Python 构建 mock-first 美股 Mini OMS 模拟交易系统，新增 SQLite run-history 持久化层，将策略信号、订单、成交、账户快照和逐快照持仓以事务方式保存为可审计记录，并保持 OMS、风控、Broker Adapter 和 Portfolio 核心逻辑与数据库解耦。
+
+English:
+
+> Built a mock-first US equity Mini OMS in Python with SQLite run-history persistence, transactionally storing strategy signals, orders, fills, account snapshots, and per-snapshot positions while keeping OMS, risk, broker, and portfolio logic independent from the database.
+
 ### Final Target Version
 
 Chinese:
@@ -907,11 +1017,11 @@ Key cleanup completed:
 - added regression coverage for rejected buy signal recovery
 - recorded remaining engineering risks before persistence work
 
-Remaining setup work:
+Completed setup work:
 
-- install Python 3.11 or 3.12
-- create `.venv`
-- initialize git and commit Phase 0-4 baseline
+- installed Python 3.12.13 through `uv`
+- created project-local `.venv`
+- initialized git and committed the Phase 0-4 baseline
 
 ### Completed Phase 2: Mini OMS, RiskEngine, MockBroker, Portfolio
 
@@ -984,10 +1094,36 @@ Implemented outputs:
 - account snapshots
 - simple JSON/CSV report
 
+### Completed Phase 5A: SQLite Persistence
+
+Goal achieved: completed trading runs can be persisted as local SQLite audit records.
+
+Implemented modules:
+
+- `src/mini_trading/persistence/sqlite.py`
+- `src/mini_trading/persistence/__init__.py`
+
+Implemented outputs:
+
+- run summary rows
+- signal rows
+- order rows
+- fill rows
+- account snapshot rows
+- snapshot position rows
+
+Key boundary:
+
+```text
+TradingEngine -> TradingRunSummary -> SQLiteRunStore -> SQLite
+```
+
+The database stores results after the trading core finishes; it does not drive OMS state transitions, risk checks, broker execution, or PnL calculation.
+
 ### Later Extensions
 
 - FastAPI read-only query layer
-- SQLite persistence
+- richer persistence query APIs
 - Alpaca Paper adapter
 - WebSocket market data provider
 - Redis/RabbitMQ/Kafka event transport

@@ -82,6 +82,27 @@ Phase 2 implements `MockBroker` with deterministic full-fill, partial-fill, no-f
 
 Phase 2 implements `Portfolio.apply_fill()`, `Portfolio.mark_price()`, and `Portfolio.snapshot()`. Account state changes are fill-driven: creating or submitting an order does not change cash or positions.
 
+### Persistence
+
+`persistence` records completed trading runs after the core engine has produced a `TradingRunSummary`. It does not submit orders, run risk checks, execute fills, or mutate portfolio state.
+
+Phase 5A implements `SQLiteRunStore` with the standard-library `sqlite3` module. The store persists:
+
+- run summaries
+- strategy signals
+- final order records
+- fills
+- account snapshots
+- per-snapshot positions
+
+The dependency direction is one-way:
+
+```text
+TradingEngine -> TradingRunSummary -> SQLiteRunStore -> SQLite database
+```
+
+Core trading modules do not import `mini_trading.persistence`. This keeps OMS, risk, broker, strategy, and portfolio logic testable without a database.
+
 ## MVP In Scope
 
 - Python package with `src` layout
@@ -92,6 +113,7 @@ Phase 2 implements `Portfolio.apply_fill()`, `Portfolio.mark_price()`, and `Port
 - order state machine
 - mock broker fills
 - portfolio/account/PnL updates
+- SQLite run-history persistence
 - unit and integration tests
 - safety defaults preventing live trading
 
@@ -100,7 +122,7 @@ Phase 2 implements `Portfolio.apply_fill()`, `Portfolio.mark_price()`, and `Port
 - real broker connectivity
 - live trading
 - FastAPI service
-- database persistence
+- production database deployment
 - Redis, Kafka, RabbitMQ, or ClickHouse
 - C++ performance modules
 - advanced matching engine
@@ -111,7 +133,7 @@ Phase 2 implements `Portfolio.apply_fill()`, `Portfolio.mark_price()`, and `Port
 ## Future Extensions
 
 1. Add FastAPI read-only endpoints for orders, fills, positions, and account state.
-2. Add SQLite persistence for orders, fills, and account snapshots.
+2. Add richer run-history queries and read-only persistence APIs.
 3. Add Alpaca Paper adapters for paper market data and paper execution.
 4. Add event transport with Redis Streams, RabbitMQ, or Kafka once the local event model is stable.
 5. Add ClickHouse for high-volume historical market data.
@@ -135,3 +157,24 @@ Phase 4 records account snapshots after every processed market data event. This 
 - account snapshots CSV
 
 Reporting is intentionally separated from trading logic. `TradingEngine` produces a summary; `ReplayReport` serializes it; the CLI writes files. No database is introduced in this phase.
+
+## Phase 5A SQLite Persistence
+
+Phase 5A adds durable local run history. `SQLiteRunStore` receives a completed `TradingRunSummary` and writes one transaction containing run metadata, signals, orders, fills, account snapshots, and position snapshots.
+
+Financial values are stored as text because the domain model uses `Decimal` and SQLite has no native fixed-precision decimal type. Storing values as `REAL` would introduce floating-point representation risk. Datetimes are stored as ISO-8601 text.
+
+The SQLite schema is intentionally small and audit-oriented:
+
+- `runs` stores final cash, equity, PnL, and row counts.
+- `signals` stores strategy intent in event order.
+- `orders` stores the final OMS order status and filled quantity.
+- `fills` stores execution facts and notional.
+- `account_snapshots` stores point-in-time account totals.
+- `snapshot_positions` stores per-symbol holdings for each account snapshot.
+
+The CLI can now write SQLite history:
+
+```powershell
+python -m mini_trading.app.cli_demo --sqlite reports/demo.sqlite
+```

@@ -24,9 +24,10 @@ The first runnable version will include:
 - pre-trade risk checks
 - MockBroker execution reports
 - Portfolio / Account / PnL updates
-- in-memory state with optional JSON/CSV output later
+- JSON/CSV replay reports
+- SQLite run-history persistence
 
-The MVP will not include FastAPI, database persistence, real broker connectivity, Redis/Kafka, ClickHouse, or C++ modules.
+The MVP will not include FastAPI, real broker connectivity, Redis/Kafka, ClickHouse, or C++ modules.
 
 ## Planned Directory Structure
 
@@ -207,6 +208,29 @@ This phase is intentionally lightweight. It is a replay/reporting layer for a de
 - add SQLite persistence for orders, fills, account snapshots, and run summaries
 - keep OMS, risk, broker, and portfolio logic independent from the database
 - support deterministic replay auditing from persisted records
+
+Phase 5 adds a lightweight SQLite persistence boundary. `SQLiteRunStore` stores completed `TradingRunSummary` objects after the engine run finishes; the trading core does not import or depend on SQLite.
+
+Persist a demo run:
+
+```powershell
+python -m mini_trading.app.cli_demo --sqlite reports/demo.sqlite
+```
+
+Write both JSON/CSV reports and SQLite run history:
+
+```powershell
+python -m mini_trading.app.cli_demo reports/demo --sqlite reports/demo.sqlite
+```
+
+Persisted tables:
+
+- `runs`
+- `signals`
+- `orders`
+- `fills`
+- `account_snapshots`
+- `snapshot_positions`
 
 ### Phase 6: Paper Trading Adapter
 
