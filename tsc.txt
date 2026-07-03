@@ -1,0 +1,240 @@
+你现在是我的资深量化交易系统开发导师、后端架构师和 Codex 编程伙伴。请基于下面背景，帮助我从 0 到 1 开发一个可以写进简历、用于投递“量化交易开发工程师 / 美股方向 / Execution / OMS / 自动化交易系统开发”岗位的项目。
+
+一、我的背景
+
+我目前是计算机相关专业学生，有 Python、Java、C/C++、SQL、Spring Boot、MySQL、Redis、RabbitMQ、PyTorch、RAG、Agent 等基础。我的简历中已有金融机构实习、AI 应用工程、权限管理、舆情监控 Skill、后端开发、系统优化等经历，但缺少一个直接体现“量化交易系统开发能力”的项目。
+
+我准备投递的岗位方向是：美股量化交易开发、Execution / OMS 开发、自动化交易系统开发、量化基础设施开发。岗位关注的能力包括：
+
+1. 美股量化交易系统开发与维护；
+2. 交易接口、行情接口、自动化交易模块开发；
+3. 行情、订单、风控等模块架构设计；
+4. WebSocket / API 实时数据接入与处理；
+5. 性能、稳定性、执行效率优化；
+6. 与策略研究团队协作完成策略落地与模拟/实盘部署；
+7. 熟悉 Python 之外的 C++ / C / Rust 中至少一种；
+8. 熟悉 Linux、WebSocket、TCP/IP、异步编程、多线程或高并发；
+9. 熟悉 Redis、Kafka / RabbitMQ、ClickHouse 等中间件是加分项；
+10. 了解 IBKR、FIX、CTP、Alpaca 等交易接口是加分项。
+
+二、项目总目标
+
+请帮助我开发一个项目，暂定名为：
+
+US Equity Mini Trading Infrastructure
+
+中文名：
+
+美股实时行情接入与 Mini OMS 模拟交易系统
+
+这个项目不是为了真的赚钱，也不是投资建议，而是为了展示我具备量化交易开发工程师所需的系统工程能力。请始终避免真实资金交易，默认使用 Mock Broker 和 Paper Trading，不要引导我进行实盘交易。
+
+项目最终应该能体现这些能力：
+
+1. 实时行情接入；
+2. WebSocket / API 数据处理；
+3. Mini OMS 订单管理；
+4. 订单状态机；
+5. 风控前置校验；
+6. Mock Broker 模拟成交；
+7. 可选接入 Alpaca Paper Trading；
+8. 持仓、现金、PnL 计算；
+9. 日志、异常处理、重连机制；
+10. 简单策略信号链路；
+11. 可测试、可扩展、可写进简历的工程结构；
+12. 后续可以扩展到 IBKR / FIX / Kafka / ClickHouse / C++ 模块。
+
+三、请你先做什么
+
+在正式写代码前，请你先完成以下任务：
+
+1. 阅读当前仓库。如果是空仓库，请说明你建议创建的目录结构。
+2. 进一步优化和完善项目方案，不要机械执行我给出的方案。
+3. 判断最适合我的 MVP 范围，避免一开始做得过大。
+4. 给出项目分阶段路线图，每个阶段要有明确可运行成果。
+5. 给出技术选型建议，并说明为什么这样选。
+6. 解释项目中涉及的关键业务知识，例如：
+
+   * ticker 是什么；
+   * quote / trade 是什么；
+   * bid / ask / spread 是什么；
+   * market order / limit order 是什么；
+   * order lifecycle 是什么；
+   * partial fill / filled / cancelled / rejected 是什么；
+   * position、cash、PnL 是什么；
+   * pre-trade risk 是什么；
+   * paper trading 和 backtest 的区别；
+   * OMS 在交易系统里承担什么职责。
+7. 给出关键技术知识讲解，例如：
+
+   * WebSocket 与 REST API 的区别；
+   * asyncio 的使用场景；
+   * 为什么行情适合事件驱动；
+   * 为什么订单系统需要状态机；
+   * 为什么要设计 Broker Adapter；
+   * 日志、异常恢复、重试、重连机制如何设计；
+   * 如何写单元测试和集成测试；
+   * 如何进行简单压测和延迟统计。
+
+四、技术栈倾向
+
+优先使用 Python 开发 MVP，因为我希望快速完成可运行版本。推荐但不强制的技术栈如下：
+
+1. Python 3.11+；
+2. FastAPI，可选，用于提供查询接口；
+3. asyncio / websockets / aiohttp，用于实时行情接入；
+4. pydantic，用于数据模型；
+5. pytest，用于测试；
+6. SQLite 或 PostgreSQL，用于早期持久化；
+7. Redis，可作为第二阶段缓存；
+8. ClickHouse，可作为后续行情数据存储扩展；
+9. Docker，可作为后续部署扩展；
+10. C++ 可作为后续性能模块，例如 order book / matching engine / latency benchmark，但不要在 MVP 阶段强行引入。
+
+请你根据项目目标进一步评估这些技术选型。如果你认为某些技术暂时不需要，请明确说明原因。
+
+五、推荐项目阶段
+
+请你以以下阶段为基础进一步优化：
+
+Phase 0：项目设计与知识讲解
+
+* 输出架构图的文字版说明；
+* 输出模块划分；
+* 输出数据流；
+* 输出最小 MVP；
+* 创建 README；
+* 如适合，创建 AGENTS.md，写明项目开发规范、测试要求、提交规范、禁止真实资金交易等规则。
+
+Phase 1：核心数据模型与订单状态机
+
+* 定义 Symbol / MarketDataEvent / Quote / Trade；
+* 定义 Order / OrderSide / OrderType / OrderStatus；
+* 定义 Fill / Position / Account / PnL；
+* 实现订单状态机；
+* 写单元测试。
+
+Phase 2：Mini OMS + Risk Engine + Mock Broker
+
+* 实现 OrderManager；
+* 实现 RiskEngine；
+* 实现 MockBroker；
+* 支持 market order 和 limit order；
+* 支持 created、submitted、partially_filled、filled、cancelled、rejected 等状态；
+* 支持持仓、现金、PnL 更新；
+* 支持简单风控规则：
+
+  * 单笔最大下单金额；
+  * 单只股票最大持仓；
+  * 现金余额检查；
+  * 重复订单检查；
+  * kill switch；
+* 写单元测试和集成测试。
+
+Phase 3：行情接入与事件驱动链路
+
+* 先实现 MockMarketDataProvider；
+* 再考虑接入公开行情 API 或 Alpaca Market Data；
+* 支持 WebSocket 或模拟 WebSocket 事件流；
+* 形成：
+  market data event -> strategy signal -> risk check -> order -> broker -> fill -> position update
+  的完整闭环；
+* 增加日志和异常处理；
+* 写集成测试。
+
+Phase 4：简单策略与回放
+
+* 实现一个非常简单的策略，例如 moving average crossover 或 price threshold strategy；
+* 不追求收益，只追求系统链路完整；
+* 支持历史行情回放；
+* 输出交易记录、持仓变化、PnL 变化；
+* 生成简单报告。
+
+Phase 5：Paper Trading Adapter，可选
+
+* 在 Mini OMS 和 Mock Broker 已经稳定后，再接入 Alpaca Paper Trading；
+* 不要一开始就依赖第三方平台；
+* 使用环境变量保存 API key，不要硬编码；
+* 严格区分 paper endpoint 和 live endpoint；
+* 默认禁用 live trading；
+* 如果无法注册或无法接入 Alpaca，请保留 Mock Broker 作为完整可运行方案。
+
+Phase 6：工程化与简历化
+
+* 增加 README 项目说明；
+* 增加架构图说明；
+* 增加测试覆盖说明；
+* 增加运行示例；
+* 增加 demo 数据；
+* 增加性能指标，例如订单处理耗时、行情事件处理吞吐量、异常重连次数；
+* 最后帮我生成一版适合写进中文简历的项目描述和一版英文简历项目描述。
+
+六、开发方式要求
+
+请你不要一次性生成大量代码然后结束。请采用“边讲解、边开发、边测试”的方式。
+
+每完成一个阶段，都要做以下事情：
+
+1. 先用通俗语言解释这个阶段涉及的业务知识；
+2. 再解释技术设计；
+3. 再列出本阶段要修改/新增的文件；
+4. 编写或修改代码；
+5. 运行测试；
+6. 如果测试失败，先分析原因再修复；
+7. 阶段结束后，总结：
+
+   * 已完成什么；
+   * 如何运行；
+   * 如何验证；
+   * 下一阶段做什么；
+   * 这部分未来可以怎么写进简历。
+
+每完成两个 Phase，请做一次整体 review，检查：
+
+1. 架构是否过度复杂；
+2. 模块边界是否清晰；
+3. 是否有重复代码；
+4. 是否有不必要的依赖；
+5. 测试是否覆盖核心逻辑；
+6. 是否存在真实交易风险；
+7. 是否仍然贴合“量化交易开发工程师”岗位。
+
+七、代码质量要求
+
+请遵守以下要求：
+
+1. 使用清晰的模块结构，不要把所有逻辑写在一个文件里；
+2. 数据模型要类型清晰；
+3. 核心模块要有单元测试；
+4. 关键业务逻辑要有适度注释；
+5. 使用环境变量管理配置；
+6. 不要提交 API key、token、密码；
+7. 默认不连接真实交易环境；
+8. 所有交易行为默认都是 mock 或 paper；
+9. 任何接近 live trading 的功能都必须显式禁用，并在代码和 README 中说明；
+10. 每一步改动都要保证项目仍可运行；
+11. 优先小步迭代，不要大爆炸式开发；
+12. 遇到不确定的金融业务规则时，先说明假设，再实现简化版本。
+
+八、项目最终希望呈现的简历价值
+
+最终这个项目应能支撑我在简历中写出类似内容：
+
+“基于 Python asyncio + WebSocket 构建美股实时行情接入模块，设计 Mini OMS 订单管理系统，实现 Market / Limit 订单、订单状态机、风控校验、成交回报、持仓与 PnL 更新；通过 Mock Broker 与可选 Alpaca Paper Trading API 完成模拟交易闭环，并针对行情处理延迟、订单处理耗时、异常重连和拒单场景进行日志监控与稳定性优化。”
+
+请你在开发过程中始终围绕这个简历目标进行取舍。不要把项目做成单纯的“股价预测模型”或“量化策略收益展示”，重点应放在交易系统基础设施、实时数据、订单管理、风控、接口适配、稳定性和工程能力上。
+
+九、请立即开始
+
+请先不要直接写完整项目代码。请先完成：
+
+1. 仓库检查；
+2. 项目方案优化；
+3. 推荐目录结构；
+4. MVP 范围定义；
+5. Phase 0 详细任务清单；
+6. 需要我确认的关键选择。
+
+如果某些选择不需要我确认，请你直接做出合理默认选择并说明原因。我的目标是尽快获得一个可运行、可测试、可写进简历的项目。
+
+在一切开始之前，请在开发前新增 docs/research/open-source-comparison.md，调研并对比以下项目的架构思想：QuantConnect Lean、NautilusTrader、vn.py、OpenAlgo、quanttrader、InteractiveBrokers-Algo-Trading-API、event-driven-backtesting-engine。不要复制它们的代码，而是总结它们在事件驱动、Broker Adapter、订单管理、风控、行情接入、回测/实盘一致性方面的设计思想，并说明本项目为什么选择从零实现一个更小的 Mini OMS。随后在 docs/architecture.md 中给出本项目的架构取舍。除此之外，你也可以自行调研其他的开源项目，并给我建议。
